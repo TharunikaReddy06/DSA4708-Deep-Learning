@@ -1,3 +1,4 @@
+#5. A recommendation system represents two movies using numerical feature vectors. The first movie is represented by A=[2,4,6], and the second movie is represented by B=[1,3,5]. The system combines the feature vectors to create a combined representation and calculates the similarity score using their dot product. Write a Python program to perform vector addition and calculate the dot product of the two movie feature vectors. Display both results.
 import numpy as np
 
 A = np.array([2, 4, 6])
