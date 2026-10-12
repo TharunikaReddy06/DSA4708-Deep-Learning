@@ -1,3 +1,4 @@
+#2. A deep learning model predicts student performance based on study hours, practice-test scores, and assignment scores. The input features are X=[4,6,8], the corresponding weights are W=[0.5,0.3,0.2], and the bias is b=2. Write a Python program to calculate the predicted output by computing the dot product of the input and weight vectors and adding the bias.
 import numpy as np
 
 X = np.array([4, 6, 8])
