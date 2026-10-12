@@ -1,3 +1,4 @@
+#11. A factory produces electronic components, and the probability that a component is defective is 0.1. A quality inspector randomly selects 20 components. The number of defective components follows a binomial distribution. Write a Python program to calculate the probability that exactly 3 components are defective, and to plot the probability mass function for 0 to 20 defective components.
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import binom
