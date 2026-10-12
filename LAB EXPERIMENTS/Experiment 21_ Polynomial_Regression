@@ -1,3 +1,4 @@
+#21. A real estate company develops machine learning models to predict house prices based on house area. A linear regression model and polynomial regression models of degrees 2 and 10 are trained using the same dataset. The company wants to compare how model complexity affects prediction performance. Write a Python program to generate sample house-price data, train polynomial regression models of degrees 1, 2, and 10, and to plot their prediction curves against the actual data.
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import PolynomialFeatures
