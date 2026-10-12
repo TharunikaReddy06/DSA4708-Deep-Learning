@@ -1,3 +1,4 @@
+#13. A service centre receives an average of 4 customers every 10 minutes. The number of customer arrivals follows a Poisson distribution. Write a Python program to calculate the probability that exactly 6 customers arrive in a 10-minute interval, and to plot the probability mass function for customer arrivals from 0 to 12.
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import poisson
