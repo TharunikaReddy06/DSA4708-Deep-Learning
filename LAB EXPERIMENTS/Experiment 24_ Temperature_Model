@@ -1,3 +1,4 @@
+#24. A weather forecasting team develops prediction models with different polynomial degrees to estimate temperature based on time-related features. The team wants to identify a suitable model that balances simplicity and predictive accuracy. Write a Python program to generate sample temperature data, train polynomial regression models with degrees 1, 3, and 12, calculate the training and testing mean squared errors, and to compare model performance.
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
