@@ -1,3 +1,4 @@
+#25.An online learning platform predicts student assessment scores using a machine learning model. The development team wants to understand whether the model suffers from high bias or high variance by examining its performance as the amount of training data increases. Write a Python program to generate a sample regression dataset, calculate learning curves for a linear regression model and a high-degree polynomial regression model, and to plot training and validation errors against the number of training samples.
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import learning_curve
