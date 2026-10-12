@@ -1,3 +1,4 @@
+#17.A deep learning model classifies an image into one of three categories: cat, dog, or bird. The actual class is represented by Y=[1,0,0], while the model predicts probabilities P=[0.7,0.2,0.1]. Write a Python program to calculate the cross-entropy loss between the actual class distribution and the predicted probabilities, and to compare the actual and predicted probabilities.
 import numpy as np
 import matplotlib.pyplot as plt
 
