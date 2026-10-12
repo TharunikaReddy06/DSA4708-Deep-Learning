@@ -1,3 +1,4 @@
+#3. A weather prediction system receives temperature and humidity measurements from two locations. The input matrix is X = [[30, 60], [35, 70]]. The model uses the weight matrix W = [[0.2, 0.5], [0.4, 0.3]]. Write a Python program to multiply the input matrix by the weight matrix and display the predicted output matrix for both locations.
 import numpy as np
 
 X = np.array([[30, 60],
