@@ -1,0 +1,19 @@
+import matplotlib.pyplot as plt
+
+spam = 0.30
+prize_spam = 0.70
+prize_not_spam = 0.10
+
+posterior = (prize_spam * spam) / (
+    prize_spam * spam +
+    prize_not_spam * (1 - spam)
+)
+
+print("Prior Probability of Spam:", spam)
+print("Probability of Spam Given 'prize':", posterior)
+
+plt.bar(["Prior Spam", "After Word 'prize'"],
+        [spam, posterior])
+plt.ylabel("Probability")
+plt.title("Spam Detection Using Bayes' Theorem")
+plt.show()

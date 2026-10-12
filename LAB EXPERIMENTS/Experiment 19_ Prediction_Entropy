@@ -1,0 +1,18 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.stats import entropy
+
+P = np.array([0.9, 0.1])
+Q = np.array([0.5, 0.5])
+
+H1 = entropy(P, base=2)
+H2 = entropy(Q, base=2)
+
+print("Entropy of P:", H1)
+print("Entropy of Q:", H2)
+print("Greater Uncertainty:", "Q" if H2 > H1 else "P")
+
+plt.bar(["P: 90/10", "Q: 50/50"], [H1, H2])
+plt.ylabel("Entropy (bits)")
+plt.title("Prediction Uncertainty")
+plt.show()

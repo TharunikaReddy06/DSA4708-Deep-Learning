@@ -1,0 +1,21 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.stats import entropy
+
+Y = np.array([0, 1, 0, 0])
+P = np.array([0.1, 0.6, 0.2, 0.1])
+
+loss = -np.sum(Y * np.log(P))
+kl = entropy(Y, P)
+
+print("Cross-Entropy Loss:", loss)
+print("KL Divergence:", kl)
+
+x = np.arange(4)
+plt.bar(x - 0.2, Y, 0.4, label="Actual")
+plt.bar(x + 0.2, P, 0.4, label="Predicted")
+plt.xticks(x, ["Class 1", "Class 2", "Class 3", "Class 4"])
+plt.ylabel("Probability")
+plt.legend()
+plt.title("Actual vs Predicted Distribution")
+plt.show()
