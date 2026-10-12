@@ -1,3 +1,4 @@
+#23. A deep learning research team uses a machine learning model to classify images based on extracted numerical features. A highly complex polynomial model performs well on training data but poorly on unseen testing data. Write a Python program to generate a sample nonlinear dataset, train polynomial regression models with degrees 2 and 15, calculate their training and testing errors, and to compare their fitted curves.
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
