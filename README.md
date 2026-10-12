@@ -5,6 +5,6 @@ This repository contains laboratory experiments for the **CSA4708 – Deep Learn
 ## Technologies Used
 - Python
 - TensorFlow / Keras
-- NumPy
-- Jupyter Notebook / Google Colab
+- NumPy,Matplotlib
+- Google Colab
 
