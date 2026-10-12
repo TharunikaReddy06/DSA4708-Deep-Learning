@@ -1,3 +1,4 @@
+#4. A handwriting recognition model adjusts its weights during training to reduce prediction errors. The current weight vector is W=[0.7,0.5,0.9], the gradient vector is G=[0.2,0.1,0.3], and the learning rate is 0.1. Write a Python program to update the weights using the gradient descent rule and display the updated weight vector.
 import numpy as np
 
 W = np.array([0.7, 0.5, 0.9])
