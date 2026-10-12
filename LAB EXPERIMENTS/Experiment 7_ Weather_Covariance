@@ -1,6 +1,4 @@
-# 1.A hospital uses a deep learning model to classify medical images. A small grayscale image is represented by a  3×3 matrix of pixel intensities. 
-# Before classification, the image must be converted into a one-dimensional vector, and the total pixel intensity must be calculated. 
-
+#7. A weather monitoring system records temperature and humidity over five days. The temperature values are [22, 25, 28, 30, 32], and the humidity values are [80, 75, 68, 60, 55]. Write a Python program to calculate the covariance matrix of temperature and humidity, and to visualize their relationship with a scatter plot.
 import numpy as np
 import matplotlib.pyplot as plt
 
