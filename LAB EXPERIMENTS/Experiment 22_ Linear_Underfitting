@@ -1,3 +1,4 @@
+#22. A college develops a machine learning model to predict students’ examination marks based on study hours. The model uses a simple linear relationship, but the actual marks follow a nonlinear pattern. Write a Python program using to generate nonlinear student-performance data, train a linear regression model, calculate its training and testing mean squared errors, and to compare the actual marks with the predicted values.
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
