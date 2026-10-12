@@ -1,3 +1,4 @@
+#16. A weather prediction system estimates the probabilities of three possible conditions as sunny, rainy, and cloudy: P=[0.6, 0.3, 0.1]. The system needs to measure the uncertainty in its predictions. Write a Python program to calculate the entropy of the probability distribution and to display the probabilities of the three weather conditions in a bar chart.
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import entropy
