@@ -1,0 +1,70 @@
+# 2. A real-estate company trains a neural network to predict house prices. During training, the loss decreases rapidly at first but fluctuates significantly when SGD is used with a high learning rate. When a smaller learning rate is used, training becomes more stable but slower. Analyze how the learning rate affects SGD convergence by training the model with different learning rates using TensorFlow and Keras. Use NumPy to organize the loss values and Matplotlib to compare the loss curves. Determine which learning-rate setting provides a better balance between convergence speed and stability. Packages: NumPy, TensorFlow, Keras, Matplotlib
+
+import numpy as np
+import matplotlib.pyplot as plt
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+
+np.random.seed(42)
+
+# Generate house data
+n = 300
+area = np.random.uniform(0, 1, n)
+bedrooms = np.random.uniform(0, 1, n)
+age = np.random.uniform(0, 1, n)
+
+X = np.column_stack([area, bedrooms, age])
+y = (0.6 * area + 0.3 * bedrooms - 0.1 * age
+     + np.random.normal(0, 0.05, n))
+
+# Train model with different learning rates
+def train(lr):
+    tf.keras.utils.set_random_seed(42)
+
+    model = keras.Sequential([
+        keras.Input(shape=(3,)),
+        layers.Dense(16, activation="relu"),
+        layers.Dense(1)
+    ])
+
+    model.compile(
+        optimizer=keras.optimizers.SGD(learning_rate=lr),
+        loss="mse"
+    )
+
+    h = model.fit(X, y, epochs=50,
+                  batch_size=16, verbose=0)
+    return np.array(h.history["loss"])
+
+rates = [0.001, 0.01, 0.1, 0.3]
+losses = {lr: train(lr) for lr in rates}
+
+target = 0.01
+best = None
+
+for lr, loss in losses.items():
+    hit = np.where(loss <= target)[0]
+    needed = hit[0] + 1 if len(hit) > 0 else None
+    stability = np.std(loss[-10:])
+
+    print(f"lr={lr}: final loss={loss[-1]:.4f}, "
+          f"epochs to reach {target}={needed}, "
+          f"std(last 10)={stability:.5f}")
+
+    if needed is not None and stability < 0.002:
+        if best is None or needed < best[1]:
+            best = (lr, needed)
+
+print("Best balance of speed and stability:",
+      best[0] if best else "no setting met both conditions")
+
+for lr, loss in losses.items():
+    plt.plot(loss, label=f"lr = {lr}")
+
+plt.xlabel("Epoch")
+plt.ylabel("Loss (MSE)")
+plt.title("Effect of Learning Rate on SGD")
+plt.legend()
+plt.grid()
+plt.show()
