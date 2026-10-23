@@ -1,0 +1,72 @@
+# 3.An image-recognition system uses a neural network to classify handwritten digits. The model trained with SGD takes longer to reach a low training loss, whereas the model trained with Momentum converges more quickly. Analyze the performance differences between SGD and Momentum by training both models under the same experimental conditions. Use NumPy to compare epoch-wise losses and Matplotlib to visualize convergence. Explain how Momentum influences updates when gradients consistently point in a similar direction. Packages: NumPy, TensorFlow, Keras, Matplotlib
+
+import numpy as np
+import matplotlib.pyplot as plt
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+
+# Load MNIST dataset
+(x_train, y_train), _ = keras.datasets.mnist.load_data()
+
+x_train = x_train[:10000].reshape(-1, 784) / 255.0
+y_train = y_train[:10000]
+
+# Train model
+def train(optimizer):
+    tf.keras.utils.set_random_seed(42)
+
+    model = keras.Sequential([
+        keras.Input(shape=(784,)),
+        layers.Dense(64, activation="relu"),
+        layers.Dense(10, activation="softmax")
+    ])
+
+    model.compile(
+        optimizer=optimizer,
+        loss="sparse_categorical_crossentropy"
+    )
+
+    h = model.fit(
+        x_train, y_train,
+        epochs=15,
+        batch_size=64,
+        verbose=0
+    )
+
+    return np.array(h.history["loss"])
+
+# SGD and Momentum
+sgd_loss = train(
+    keras.optimizers.SGD(learning_rate=0.01)
+)
+
+mom_loss = train(
+    keras.optimizers.SGD(
+        learning_rate=0.01,
+        momentum=0.9
+    )
+)
+
+# Compare losses
+diff = sgd_loss - mom_loss
+
+print("Epoch   SGD loss   Momentum loss   Difference")
+
+for i in range(15):
+    print(f"{i+1:5d}   {sgd_loss[i]:.4f}     "
+          f"{mom_loss[i]:.4f}          {diff[i]:.4f}")
+
+print("Final loss -> SGD:", sgd_loss[-1],
+      "Momentum:", mom_loss[-1])
+
+# Plot loss curves
+plt.plot(sgd_loss, label="SGD")
+plt.plot(mom_loss, label="SGD with Momentum")
+
+plt.xlabel("Epoch")
+plt.ylabel("Training Loss")
+plt.title("SGD vs Momentum on MNIST")
+plt.legend()
+plt.grid()
+plt.show()
