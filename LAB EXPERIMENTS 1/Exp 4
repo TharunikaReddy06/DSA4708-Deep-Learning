@@ -1,0 +1,84 @@
+# 4. A healthcare analytics team builds a neural network to classify patient records into risk categories. The team observes that Adam reduces training loss quickly, while ordinary Gradient Descent requires more epochs to achieve a similar loss value. Analyze the convergence behavior of Gradient Descent and Adam by training comparable Keras models with TensorFlow. Record the loss values using NumPy and plot the results using Matplotlib. Evaluate the differences in convergence speed and training stability, and explain why Adam's adaptive learning rates may be beneficial. Packages: NumPy, TensorFlow, Keras, Matplotlib
+
+import numpy as np
+import matplotlib.pyplot as plt
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+
+np.random.seed(42)
+
+# Generate patient data
+n = 300
+X = np.random.normal(0, 1, (n, 4))
+
+score = (
+    X @ np.array([0.5, 1.0, 0.8, 0.7])
+    + np.random.normal(0, 0.3, n)
+)
+
+y = np.digitize(
+    score, np.percentile(score, [33, 66])
+)
+
+# Train model
+def train(optimizer):
+    tf.keras.utils.set_random_seed(42)
+
+    model = keras.Sequential([
+        keras.Input(shape=(4,)),
+        layers.Dense(16, activation="relu"),
+        layers.Dense(8, activation="relu"),
+        layers.Dense(3, activation="softmax")
+    ])
+
+    model.compile(
+        optimizer=optimizer,
+        loss="sparse_categorical_crossentropy"
+    )
+
+    h = model.fit(
+        X, y,
+        epochs=200,
+        batch_size=n,
+        verbose=0
+    )
+
+    return np.array(h.history["loss"])
+
+# Train using both optimizers
+gd_loss = train(
+    keras.optimizers.SGD(learning_rate=0.01)
+)
+
+adam_loss = train(
+    keras.optimizers.Adam(learning_rate=0.01)
+)
+
+# Compare performance
+target = 0.6
+
+for name, loss in [
+    ("Gradient Descent", gd_loss),
+    ("Adam", adam_loss)
+]:
+    hit = np.where(loss <= target)[0]
+    needed = hit[0] + 1 if len(hit) > 0 else "not reached"
+
+    print(
+        f"{name}: final loss={loss[-1]:.4f}, "
+        f"epochs to reach {target}={needed}, "
+        f"std of changes (last 50)="
+        f"{np.std(np.diff(loss[-50:])):.6f}"
+    )
+
+# Plot loss curves
+plt.plot(gd_loss, label="Gradient Descent")
+plt.plot(adam_loss, label="Adam")
+
+plt.xlabel("Epoch")
+plt.ylabel("Loss (Cross-Entropy)")
+plt.title("Gradient Descent vs Adam")
+plt.legend()
+plt.grid()
+plt.show()
