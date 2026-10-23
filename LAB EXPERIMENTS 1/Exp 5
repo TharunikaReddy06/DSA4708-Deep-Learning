@@ -1,0 +1,119 @@
+# 5. A retail company develops a neural network to forecast weekly sales. Four versions of the model are trained using Gradient Descent, SGD, Momentum and Adam. The models show different training-loss patterns, convergence speeds and validation performance. Analyze and compare the four optimizers by training the models using TensorFlow and Keras under comparable conditions. Use NumPy to store and compare training and validation losses, and Matplotlib to plot the loss curves. Identify which optimizer provides the most suitable combination of convergence speed, stability and validation performance, and justify the selection using experimental evidence. Packages: NumPy, TensorFlow, Keras, Matplotlib
+
+import numpy as np
+import matplotlib.pyplot as plt
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+
+np.random.seed(42)
+
+# Generate weekly sales data
+n = 400
+week = np.arange(n)
+
+promo = np.random.randint(0, 2, n)
+price = np.random.uniform(0, 1, n)
+
+season_s = np.sin(2 * np.pi * week / 52)
+season_c = np.cos(2 * np.pi * week / 52)
+
+X = np.column_stack([
+    promo, price, season_s, season_c
+])
+
+y = (
+    0.5 + 0.3 * promo - 0.2 * price
+    + 0.2 * season_s
+    + np.random.normal(0, 0.05, n)
+)
+
+# Split into training and validation sets
+idx = np.random.permutation(n)
+tr, va = idx[:320], idx[320:]
+
+X_tr, y_tr = X[tr], y[tr]
+X_va, y_va = X[va], y[va]
+
+# Train model
+def train(optimizer, batch_size):
+    tf.keras.utils.set_random_seed(42)
+
+    model = keras.Sequential([
+        keras.Input(shape=(4,)),
+        layers.Dense(16, activation="relu"),
+        layers.Dense(8, activation="relu"),
+        layers.Dense(1)
+    ])
+
+    model.compile(
+        optimizer=optimizer,
+        loss="mse"
+    )
+
+    h = model.fit(
+        X_tr, y_tr,
+        epochs=60,
+        batch_size=batch_size,
+        validation_data=(X_va, y_va),
+        verbose=0
+    )
+
+    return (
+        np.array(h.history["loss"]),
+        np.array(h.history["val_loss"])
+    )
+
+# Compare four optimizers
+runs = {
+    "Gradient Descent": train(
+        keras.optimizers.SGD(0.01), len(X_tr)
+    ),
+    "SGD": train(
+        keras.optimizers.SGD(0.01), 16
+    ),
+    "Momentum": train(
+        keras.optimizers.SGD(0.01, momentum=0.9), 16
+    ),
+    "Adam": train(
+        keras.optimizers.Adam(0.01), 16
+    )
+}
+
+# Display results
+target = 0.01
+
+print("Optimizer         Final Val Loss Epochs to target Stability")
+
+for name, (tl, vl) in runs.items():
+    hit = np.where(vl <= target)[0]
+    needed = hit[0] + 1 if len(hit) > 0 else "not reached"
+
+    print(
+        f"{name:16s} {vl[-1]:.4f}           "
+        f"{str(needed):12s}      "
+        f"{np.std(vl[-10:]):.5f}"
+    )
+
+# Select optimizer with lowest validation loss
+best = min(runs, key=lambda k: runs[k][1][-1])
+print("Most suitable optimizer:", best)
+
+# Plot training and validation losses
+fig, ax = plt.subplots(1, 2, figsize=(12, 4))
+
+for name, (tl, vl) in runs.items():
+    ax[0].plot(tl, label=name)
+    ax[1].plot(vl, label=name)
+
+ax[0].set_title("Training Loss")
+ax[1].set_title("Validation Loss")
+
+for a in ax:
+    a.set_xlabel("Epoch")
+    a.set_ylabel("MSE")
+    a.legend()
+    a.grid()
+
+plt.tight_layout()
+plt.show()
