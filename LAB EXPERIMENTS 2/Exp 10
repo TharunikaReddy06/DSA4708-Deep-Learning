@@ -1,0 +1,98 @@
+# Question 10
+import numpy as np
+import matplotlib.pyplot as plt
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+ 
+np.random.seed(42)
+# Synthetic 16x16 road-sign images
+# 0 = speed limit (ring), 1 = stop (filled octagon), 2 = no entry (disc + bar)
+names = ["Speed limit", "Stop", "No entry"]
+size = 16
+gy, gx = np.mgrid[0:size, 0:size] - (size - 1) / 2
+ 
+def make_sign(label):
+    dx, dy = np.random.randint(-1, 2, 2)               # random shift
+    x, y = gx - dx, gy - dy
+    r = np.sqrt(x ** 2 + y ** 2)
+    if label == 0:
+        img = ((r >= 4.5) & (r <= 6.5)).astype(float)
+    elif label == 1:
+        img = ((np.maximum(abs(x), abs(y)) <= 6) &
+               (abs(x) + abs(y) <= 8.5)).astype(float)
+    else:
+        img = (r <= 6).astype(float)
+        img[(abs(y) <= 1.0) & (abs(x) <= 3.5)] = 0.0
+    img = img * np.random.uniform(0.7, 1.0) + np.random.normal(0, 0.8, img.shape)
+    return img
+ 
+n_per = 300
+X = np.array([make_sign(c) for c in range(3) for _ in range(n_per)])
+y = np.repeat(np.arange(3), n_per)
+X = X.reshape(-1, size, size, 1)
+ 
+idx = np.random.permutation(len(X))
+tr, va, te = idx[:630], idx[630:765], idx[765:]
+ 
+tf.keras.utils.set_random_seed(42)
+model = keras.Sequential([
+    keras.Input(shape=(size, size, 1)),
+    layers.Conv2D(16, 3, activation="relu"),
+    layers.MaxPooling2D(),
+    layers.Conv2D(32, 3, activation="relu"),
+    layers.MaxPooling2D(),
+    layers.Flatten(),
+    layers.Dense(32, activation="relu"),
+    layers.Dense(3, activation="softmax")
+])
+model.compile(optimizer=keras.optimizers.Adam(0.001),
+              loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+h = model.fit(X[tr], y[tr], epochs=15, batch_size=32,
+              validation_data=(X[va], y[va]), verbose=0)
+acc = np.array(h.history["accuracy"])
+val_acc = np.array(h.history["val_accuracy"])
+loss = np.array(h.history["loss"])
+val_loss = np.array(h.history["val_loss"])
+ 
+# Test evaluation and confusion matrix (rows = actual, columns = predicted)
+pred = np.argmax(model.predict(X[te], verbose=0), axis=1)
+cm = np.zeros((3, 3), dtype=int)
+np.add.at(cm, (y[te], pred), 1)
+print("Test accuracy =", np.mean(pred == y[te]))
+print("Confusion matrix:\n", cm)
+for i, nm in enumerate(names):
+    print(f"{nm:12s} class accuracy = {cm[i, i] / cm[i].sum():.3f}")
+off = cm.copy()
+np.fill_diagonal(off, 0)
+a, p = np.unravel_index(np.argmax(off), off.shape)
+if off[a, p] > 0:
+    print(f"Most frequent confusion: actual {names[a]} -> predicted {names[p]} "
+          f"({off[a, p]} samples)")
+else:
+    print("No misclassifications on the test set")
+ 
+fig, ax = plt.subplots(1, 3, figsize=(16, 4.5))
+ax[0].plot(acc, label="Training")
+ax[0].plot(val_acc, label="Validation")
+ax[0].set_title("Accuracy")
+ax[1].plot(loss, label="Training")
+ax[1].plot(val_loss, label="Validation")
+ax[1].set_title("Loss")
+for a_ in ax[:2]:
+    a_.set_xlabel("Epoch")
+    a_.legend()
+    a_.grid()
+ax[2].imshow(cm, cmap="Blues")
+ax[2].set_xticks(range(3))
+ax[2].set_xticklabels(names)
+ax[2].set_yticks(range(3))
+ax[2].set_yticklabels(names)
+ax[2].set_xlabel("Predicted")
+ax[2].set_ylabel("Actual")
+ax[2].set_title("Confusion Matrix")
+for i in range(3):
+    for j in range(3):
+        ax[2].text(j, i, cm[i, j], ha="center", va="center")
+plt.tight_layout()
+plt.show()
