@@ -1,0 +1,59 @@
+# Question 5
+import numpy as np
+import matplotlib.pyplot as plt
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+ 
+np.random.seed(42)
+# Student data (scaled 0-1): aptitude, programming, communication
+n = 500
+aptitude = np.random.uniform(0, 1, n)
+coding = np.random.uniform(0, 1, n)
+comm = np.random.uniform(0, 1, n)
+X = np.column_stack([aptitude, coding, comm])
+score = (0.35 * aptitude + 0.4 * coding + 0.25 * comm
+         + 0.3 * aptitude * coding + np.random.normal(0, 0.05, n))
+y = (score > np.median(score)).astype(int)         # 1 = eligible
+ 
+# Train / validation split using NumPy
+idx = np.random.permutation(n)
+tr, va = idx[:350], idx[350:]
+X_tr, y_tr, X_va, y_va = X[tr], y[tr], X[va], y[va]
+ 
+def train(hidden):
+    tf.keras.utils.set_random_seed(42)
+    model = keras.Sequential([
+        keras.Input(shape=(3,)),
+        layers.Dense(hidden, activation="relu"),
+        layers.Dense(1, activation="sigmoid")
+    ])
+    model.compile(optimizer=keras.optimizers.Adam(0.01),
+                  loss="binary_crossentropy", metrics=["accuracy"])
+    h = model.fit(X_tr, y_tr, epochs=60, batch_size=16,
+                  validation_data=(X_va, y_va), verbose=0)
+    return {k: np.array(v) for k, v in h.history.items()}
+ 
+sizes = [2, 8, 32, 128]
+results = {s: train(s) for s in sizes}
+ 
+print("Hidden  Train Acc  Val Acc  Train Loss  Val Loss  Acc Gap")
+for s, r in results.items():
+    gap = r["accuracy"][-1] - r["val_accuracy"][-1]
+    print(f"{s:6d}  {r['accuracy'][-1]:.4f}     {r['val_accuracy'][-1]:.4f}   "
+          f"{r['loss'][-1]:.4f}      {r['val_loss'][-1]:.4f}    {gap:.4f}")
+ 
+fig, ax = plt.subplots(1, 2, figsize=(12, 4.5))
+for s, r in results.items():
+    ax[0].plot(r["accuracy"], label=f"{s} train")
+    ax[0].plot(r["val_accuracy"], "--", label=f"{s} val")
+    ax[1].plot(r["loss"], label=f"{s} train")
+    ax[1].plot(r["val_loss"], "--", label=f"{s} val")
+ax[0].set_title("Accuracy")
+ax[1].set_title("Loss")
+for a in ax:
+    a.set_xlabel("Epoch")
+    a.legend(fontsize=8)
+    a.grid()
+plt.show()
+
