@@ -1,0 +1,47 @@
+# Question 1
+import numpy as np
+import matplotlib.pyplot as plt
+ 
+np.random.seed(42)
+# Traffic data (scaled 0-1): vehicle count and average waiting time
+low = np.random.normal([0.25, 0.25], 0.08, (25, 2))     # Low Traffic  -> 0
+heavy = np.random.normal([0.75, 0.75], 0.08, (25, 2))   # Heavy Traffic -> 1
+X = np.vstack([low, heavy])
+y = np.array([0] * 25 + [1] * 25)
+ 
+def step(z):
+    return np.where(z >= 0, 1, 0)
+ 
+def perceptron(X, w, b):
+    z = X @ w + b          # weighted sum
+    return step(z)         # step activation
+ 
+# Different weight and bias settings
+settings = {
+    "A: w=[1,-1], b=0":     (np.array([1.0, -1.0]), 0.0),
+    "B: w=[1,1], b=0":      (np.array([1.0, 1.0]), 0.0),
+    "C: w=[1,1], b=-0.6":   (np.array([1.0, 1.0]), -0.6),
+    "D: w=[1,1], b=-1.0":   (np.array([1.0, 1.0]), -1.0),
+}
+ 
+fig, axes = plt.subplots(2, 2, figsize=(10, 8))
+for ax, (name, (w, b)) in zip(axes.ravel(), settings.items()):
+    pred = perceptron(X, w, b)
+    acc = np.mean(pred == y) * 100
+    print(f"Setting {name:20s} accuracy = {acc:.1f}%")
+ 
+    ax.scatter(X[y == 0, 0], X[y == 0, 1], c="tab:blue", label="Low (0)")
+    ax.scatter(X[y == 1, 0], X[y == 1, 1], c="tab:red", label="Heavy (1)")
+    # decision boundary: w1*x1 + w2*x2 + b = 0
+    x1 = np.linspace(0, 1, 100)
+    x2 = -(w[0] * x1 + b) / w[1]
+    ax.plot(x1, x2, "k--", label="Decision boundary")
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.set_xlabel("Vehicle count (scaled)")
+    ax.set_ylabel("Waiting time (scaled)")
+    ax.set_title(f"{name}  (acc = {acc:.1f}%)")
+    ax.legend()
+    ax.grid()
+plt.tight_layout()
+plt.show()
