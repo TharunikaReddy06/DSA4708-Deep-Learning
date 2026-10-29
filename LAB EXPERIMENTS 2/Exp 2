@@ -1,0 +1,65 @@
+# Question 2
+import numpy as np
+import matplotlib.pyplot as plt
+ 
+# Machine data (scaled 0-1): temperature, vibration
+X = np.array([[0.10, 0.10], [0.20, 0.15],     # normal            -> 0
+              [0.90, 0.90], [0.85, 0.80],     # both high         -> 0
+              [0.90, 0.10], [0.80, 0.20],     # only temp high    -> 1
+              [0.10, 0.90], [0.20, 0.80]])    # only vibration high -> 1
+y = np.array([0, 0, 0, 0, 1, 1, 1, 1])
+ 
+def step(z):
+    return np.where(z >= 0, 1, 0)
+ 
+def forward(X, w, b):
+    z = X @ w + b          # weighted sum
+    return z, step(z)      # activation
+ 
+def show(title, w, b):
+    z, pred = forward(X, w, b)
+    print(f"\n{title}: w={w}, b={b}")
+    print("Temp  Vib   z      Pred  Actual")
+    for xi, zi, pi, yi in zip(X, z, pred, y):
+        print(f"{xi[0]:.2f}  {xi[1]:.2f}  {zi:5.2f}  {pi}     {yi}")
+    acc = np.mean(pred == y) * 100
+    print("Accuracy =", acc, "%")
+    return pred, acc
+ 
+pred1, acc1 = show("Initial weights", np.array([1.0, -1.0]), 0.0)
+pred2, acc2 = show("Modified weights", np.array([1.0, 1.0]), -0.5)
+ 
+# Search many weight/bias values to find the best a single perceptron can do
+best_acc, best_p = 0, None
+vals = np.linspace(-2, 2, 41)
+for w1 in vals:
+    for w2 in vals:
+        for b in vals:
+            a = np.mean(forward(X, np.array([w1, w2]), b)[1] == y)
+            if a > best_acc:
+                best_acc = a
+                best_p = (round(float(w1), 2), round(float(w2), 2),
+                          round(float(b), 2))
+print("\nBest accuracy found by search =", best_acc * 100, "%")
+print("Best (w1, w2, b) =", best_p)
+ 
+fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))
+for ax, (title, w, b, pred) in zip(axes, [
+        ("Initial weights", np.array([1.0, -1.0]), 0.0, pred1),
+        ("Modified weights", np.array([1.0, 1.0]), -0.5, pred2)]):
+    ax.scatter(X[y == 0, 0], X[y == 0, 1], c="tab:blue", label="Continue (0)")
+    ax.scatter(X[y == 1, 0], X[y == 1, 1], c="tab:red", label="Inspect (1)")
+    wrong = pred != y
+    ax.scatter(X[wrong, 0], X[wrong, 1], s=200, facecolors="none",
+               edgecolors="k", label="Misclassified")
+    x1 = np.linspace(0, 1, 100)
+    ax.plot(x1, -(w[0] * x1 + b) / w[1], "k--")
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.set_xlabel("Temperature (scaled)")
+    ax.set_ylabel("Vibration (scaled)")
+    ax.set_title(title)
+    ax.legend()
+    ax.grid()
+plt.tight_layout()
+plt.show()
