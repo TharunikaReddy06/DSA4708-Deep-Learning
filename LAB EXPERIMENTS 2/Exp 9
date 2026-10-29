@@ -1,0 +1,97 @@
+# Question 9
+import numpy as np
+import matplotlib.pyplot as plt
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+ 
+np.random.seed(42)
+# Simplified leaf dataset: 4x4 grayscale images (0 = dark, 1 = bright)
+# Healthy  : fairly uniform leaf surface
+# Diseased : contains a dark 2x2 spot at a random position
+n = 600
+images = np.random.normal(0.8, 0.12, (n, 4, 4))
+labels = np.random.randint(0, 2, n)
+for i in range(n):
+    if labels[i] == 1:
+        r, c = np.random.randint(0, 3, 2)
+        images[i, r:r + 2, c:c + 2] = np.random.normal(0.35, 0.12, (2, 2))
+images = np.clip(images, 0, 1)
+X = images.reshape(-1, 4, 4, 1)
+y = labels
+ 
+# ---- Manual illustration of the processing steps on one 4x4 matrix ----
+def conv2d(img, k):
+    h, w = img.shape
+    kh, kw = k.shape
+    out = np.zeros((h - kh + 1, w - kw + 1))
+    for i in range(out.shape[0]):
+        for j in range(out.shape[1]):
+            out[i, j] = np.sum(img[i:i + kh, j:j + kw] * k)
+    return out
+ 
+def maxpool(x, size=2, stride=1):
+    h = (x.shape[0] - size) // stride + 1
+    w = (x.shape[1] - size) // stride + 1
+    out = np.zeros((h, w))
+    for i in range(h):
+        for j in range(w):
+            out[i, j] = x[i * stride:i * stride + size,
+                          j * stride:j * stride + size].max()
+    return out
+ 
+sample = X[np.where(y == 1)[0][0], :, :, 0]            # a diseased leaf
+kernel = np.array([[1, 1], [1, 1]]) / 4.0              # 2x2 averaging kernel
+fmap = conv2d(sample, kernel)                          # convolution  -> 3x3
+act = np.maximum(0, fmap)                              # ReLU
+pooled = maxpool(act, 2, 1)                            # max pooling  -> 2x2
+flat = pooled.flatten()                                # flatten      -> 4
+print("Input 4x4:\n", np.round(sample, 2))
+print("Feature map 3x3:\n", np.round(fmap, 2))
+print("After ReLU 3x3:\n", np.round(act, 2))
+print("After max pooling 2x2:\n", np.round(pooled, 2))
+print("Flattened vector:", np.round(flat, 2))
+ 
+fig, ax = plt.subplots(1, 3, figsize=(10, 3.5))
+for a, (img, t) in zip(ax, [(sample, "Input 4x4"), (act, "Conv + ReLU 3x3"),
+                            (pooled, "Max pooling 2x2")]):
+    a.imshow(img, cmap="gray")
+    a.set_title(t)
+plt.show()
+ 
+# ---- CNN with Keras ----
+idx = np.random.permutation(n)
+tr, te = idx[:480], idx[480:]
+tf.keras.utils.set_random_seed(42)
+model = keras.Sequential([
+    keras.Input(shape=(4, 4, 1)),
+    layers.Conv2D(4, (2, 2), activation="relu"),        # 4x4 -> 3x3x4
+    layers.MaxPooling2D(pool_size=(2, 2), strides=1),   # 3x3 -> 2x2x4
+    layers.Flatten(),                                   # 16 values
+    layers.Dense(1, activation="sigmoid")               # healthy / diseased
+])
+model.summary()
+model.compile(optimizer=keras.optimizers.Adam(0.01),
+              loss="binary_crossentropy", metrics=["accuracy"])
+h = model.fit(X[tr], y[tr], epochs=40, batch_size=16,
+              validation_split=0.2, verbose=0)
+acc = np.array(h.history["accuracy"])
+val_acc = np.array(h.history["val_accuracy"])
+loss = np.array(h.history["loss"])
+val_loss = np.array(h.history["val_loss"])
+test_loss, test_acc = model.evaluate(X[te], y[te], verbose=0)
+print("Final train acc =", acc[-1], " val acc =", val_acc[-1])
+print("Test loss =", test_loss, " Test accuracy =", test_acc)
+ 
+fig, ax = plt.subplots(1, 2, figsize=(11, 4))
+ax[0].plot(acc, label="Training")
+ax[0].plot(val_acc, label="Validation")
+ax[0].set_title("Accuracy")
+ax[1].plot(loss, label="Training")
+ax[1].plot(val_loss, label="Validation")
+ax[1].set_title("Loss")
+for a in ax:
+    a.set_xlabel("Epoch")
+    a.legend()
+    a.grid()
+plt.show()
