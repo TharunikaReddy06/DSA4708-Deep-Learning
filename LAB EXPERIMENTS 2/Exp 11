@@ -1,0 +1,110 @@
+# Question 11
+import time
+import numpy as np
+import matplotlib.pyplot as plt
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+ 
+np.random.seed(42)
+# Synthetic 32x32 grayscale wildlife images (replace with real images using
+# keras.utils.image_dataset_from_directory if a dataset folder is available)
+# 0 = deer (small body with thin legs), 1 = elephant (large round body),
+# 2 = tiger (striped texture)
+names = ["Deer", "Elephant", "Tiger"]
+size = 32
+gy, gx = np.mgrid[0:size, 0:size] - (size - 1) / 2
+ 
+def make_image(label):
+    dx, dy = np.random.randint(-3, 4, 2)
+    x, y = gx - dx, gy - dy
+    img = np.full((size, size), 0.2)
+    if label == 0:
+        img[(x / 8) ** 2 + (y / 4) ** 2 <= 1] = 0.7              # body
+        for lx in (-6, -3, 3, 6):                                  # legs
+            img[(abs(x - lx) <= 0.6) & (y > 3) & (y < 11)] = 0.7
+    elif label == 1:
+        img[(x ** 2 + y ** 2) <= 11 ** 2] = 0.7                  # big body
+    else:
+        phase = np.random.uniform(0, 6.28)
+        img = 0.5 + 0.35 * np.sin(0.9 * x + phase)               # stripes
+    return img + np.random.normal(0, 1.0, img.shape)
+ 
+n_per = 300
+X = np.array([make_image(c) for c in range(3) for _ in range(n_per)])
+y = np.repeat(np.arange(3), n_per)
+X = X.reshape(-1, size, size, 1)
+ 
+idx = np.random.permutation(len(X))
+tr, va = idx[:720], idx[720:]                                      # same split
+ 
+def shallow():
+    return keras.Sequential([
+        keras.Input(shape=(size, size, 1)),
+        layers.Conv2D(8, 3, activation="relu"),
+        layers.MaxPooling2D(),
+        layers.Flatten(),
+        layers.Dense(3, activation="softmax")
+    ])
+ 
+def deep():
+    return keras.Sequential([
+        keras.Input(shape=(size, size, 1)),
+        layers.Conv2D(16, 3, activation="relu"),
+        layers.MaxPooling2D(),
+        layers.Conv2D(32, 3, activation="relu"),
+        layers.MaxPooling2D(),
+        layers.Conv2D(64, 3, activation="relu"),
+        layers.MaxPooling2D(),
+        layers.Flatten(),
+        layers.Dense(64, activation="relu"),
+        layers.Dense(3, activation="softmax")
+    ])
+ 
+def train(build):
+    tf.keras.utils.set_random_seed(42)
+    model = build()
+    model.compile(optimizer=keras.optimizers.Adam(0.001),
+                  loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+    start = time.time()
+    h = model.fit(X[tr], y[tr], epochs=15, batch_size=32,
+                  validation_data=(X[va], y[va]), verbose=0)
+    secs = time.time() - start
+    r = {k: np.array(v) for k, v in h.history.items()}
+    r["time"] = secs
+    r["params"] = model.count_params()
+    return r
+ 
+results = {"Shallow CNN": train(shallow), "Deeper CNN": train(deep)}
+ 
+print("Model        Params   Time(s)  Train Acc  Val Acc  Train Loss  Val Loss")
+for k, r in results.items():
+    print(f"{k:11s}  {r['params']:6d}   {r['time']:6.2f}   "
+          f"{r['accuracy'][-1]:.4f}     {r['val_accuracy'][-1]:.4f}   "
+          f"{r['loss'][-1]:.4f}      {r['val_loss'][-1]:.4f}")
+ 
+s, d = results["Shallow CNN"], results["Deeper CNN"]
+gain = d["val_accuracy"][-1] - s["val_accuracy"][-1]
+if gain > 0.02:
+    print(f"Recommendation: Deeper CNN (+{gain*100:.1f}% validation accuracy)")
+else:
+    print("Recommendation: Shallow CNN (similar accuracy at lower cost)")
+ 
+fig, ax = plt.subplots(1, 3, figsize=(16, 4.5))
+for k, r in results.items():
+    ax[0].plot(r["accuracy"], label=f"{k} (train)")
+    ax[0].plot(r["val_accuracy"], "--", label=f"{k} (val)")
+    ax[1].plot(r["loss"], label=f"{k} (train)")
+    ax[1].plot(r["val_loss"], "--", label=f"{k} (val)")
+ax[0].set_title("Accuracy")
+ax[1].set_title("Loss")
+for a in ax[:2]:
+    a.set_xlabel("Epoch")
+    a.legend(fontsize=8)
+    a.grid()
+ax[2].bar(list(results.keys()), [r["time"] for r in results.values()],
+          color=["tab:blue", "tab:orange"])
+ax[2].set_ylabel("Training time (s)")
+ax[2].set_title("Computational Cost")
+plt.tight_layout()
+plt.show()
