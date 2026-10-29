@@ -1,0 +1,74 @@
+# Question 4
+import numpy as np
+import matplotlib.pyplot as plt
+ 
+np.random.seed(42)
+# Crop data (scaled 0-1): soil moisture, fertilizer quantity
+n = 200
+moisture = np.random.uniform(0, 1, n)
+fert = np.random.uniform(0, 1, n)
+X = np.column_stack([moisture, fert])
+score = 0.6 * moisture + 0.4 * fert + 0.3 * moisture * fert
+y = (score > 0.5).astype(float).reshape(-1, 1)    # 1 = high yield, 0 = low
+ 
+def sigmoid(z):
+    return 1 / (1 + np.exp(-z))
+ 
+# Random initial weights: 2 inputs -> 8 hidden neurons -> 1 output
+W1 = np.random.randn(2, 8) * 0.5
+b1 = np.zeros((1, 8))
+W2 = np.random.randn(8, 1) * 0.5
+b2 = np.zeros((1, 1))
+ 
+def forward(X):
+    a1 = sigmoid(X @ W1 + b1)
+    a2 = sigmoid(a1 @ W2 + b2)
+    return a1, a2
+ 
+def bce(y, p):
+    p = np.clip(p, 1e-8, 1 - 1e-8)
+    return -np.mean(y * np.log(p) + (1 - y) * np.log(1 - p))
+ 
+# Predictions BEFORE training
+_, p_before = forward(X)
+acc_before = np.mean((p_before > 0.5) == y) * 100
+print("Accuracy before training =", round(acc_before, 1), "%")
+ 
+lr = 1.0
+epochs = 3000
+losses = np.zeros(epochs)
+m = len(X)
+ 
+for ep in range(epochs):
+    a1, a2 = forward(X)                       # forward pass
+    losses[ep] = bce(y, a2)                   # binary cross-entropy
+ 
+    dz2 = (a2 - y) / m                        # backpropagation
+    dW2 = a1.T @ dz2
+    db2 = dz2.sum(axis=0, keepdims=True)
+    dz1 = (dz2 @ W2.T) * a1 * (1 - a1)
+    dW1 = X.T @ dz1
+    db1 = dz1.sum(axis=0, keepdims=True)
+ 
+    W2 -= lr * dW2                            # weight update
+    b2 -= lr * db2
+    W1 -= lr * dW1
+    b1 -= lr * db1
+ 
+# Predictions AFTER training
+_, p_after = forward(X)
+acc_after = np.mean((p_after > 0.5) == y) * 100
+print("Accuracy after training  =", round(acc_after, 1), "%")
+print("Initial loss =", losses[0], " Final loss =", losses[-1])
+ 
+print("\nSample  Actual  Before  After")
+for i in range(8):
+    print(f"{i+1:4d}    {int(y[i,0])}       {int(p_before[i,0] > 0.5)}       "
+          f"{int(p_after[i,0] > 0.5)}")
+ 
+plt.plot(losses)
+plt.xlabel("Epoch")
+plt.ylabel("Binary Cross-Entropy Loss")
+plt.title("Loss Curve - Crop Yield Classification")
+plt.grid()
+plt.show()
