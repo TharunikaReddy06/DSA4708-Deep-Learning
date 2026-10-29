@@ -1,0 +1,65 @@
+# Question 3
+import numpy as np
+import matplotlib.pyplot as plt
+ 
+np.random.seed(42)
+# Building data (scaled 0-1): temperature, occupied rooms -> consumption
+n = 100
+temp = np.random.uniform(0, 1, n)
+rooms = np.random.uniform(0, 1, n)
+X = np.column_stack([temp, rooms])
+y = (0.5 * temp + 0.4 * rooms + 0.1
+     + np.random.normal(0, 0.02, n)).reshape(-1, 1)
+ 
+# Random initial weights: 2 inputs -> 6 hidden neurons -> 1 output
+W1 = np.random.randn(2, 6) * 0.5
+b1 = np.zeros((1, 6))
+W2 = np.random.randn(6, 1) * 0.5
+b2 = np.zeros((1, 1))
+ 
+lr = 0.1
+epochs = 2000
+losses = np.zeros(epochs)
+m = len(X)
+ 
+for ep in range(epochs):
+    # Forward propagation
+    z1 = X @ W1 + b1
+    a1 = np.tanh(z1)                  # hidden layer
+    y_hat = a1 @ W2 + b2              # output layer (linear)
+ 
+    # Mean squared error
+    loss = np.mean((y_hat - y) ** 2)
+    losses[ep] = loss
+ 
+    # Backpropagation
+    dy = 2 * (y_hat - y) / m
+    dW2 = a1.T @ dy
+    db2 = dy.sum(axis=0, keepdims=True)
+    da1 = dy @ W2.T
+    dz1 = da1 * (1 - a1 ** 2)         # derivative of tanh
+    dW1 = X.T @ dz1
+    db1 = dz1.sum(axis=0, keepdims=True)
+ 
+    # Weight and bias update
+    W2 -= lr * dW2
+    b2 -= lr * db2
+    W1 -= lr * dW1
+    b1 -= lr * db1
+ 
+print("Initial loss =", losses[0])
+for ep in [100, 500, 1000, 1999]:
+    print(f"Loss at epoch {ep:4d} = {losses[ep]:.6f}")
+print("Final loss   =", losses[-1])
+ 
+print("\nActual vs predicted consumption (first 5 samples):")
+for a, p in zip(y[:5, 0], y_hat[:5, 0]):
+    print(f"  actual = {a:.3f}   predicted = {p:.3f}")
+ 
+plt.plot(losses)
+plt.xlabel("Epoch")
+plt.ylabel("Loss (MSE)")
+plt.title("Loss Curve - Electricity Consumption Prediction")
+plt.yscale("log")
+plt.grid()
+plt.show()
