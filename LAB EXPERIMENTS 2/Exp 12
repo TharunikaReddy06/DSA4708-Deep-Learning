@@ -1,0 +1,103 @@
+# Question 12
+import time
+import numpy as np
+import matplotlib.pyplot as plt
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+ 
+np.random.seed(42)
+# Synthetic 24x24 grayscale waste images (replace with real images using
+# keras.utils.image_dataset_from_directory if a dataset folder is available)
+# 0 = plastic (smooth gradient + glossy spot), 1 = paper (rough speckle),
+# 2 = metal (brushed horizontal lines)
+names = ["Plastic", "Paper", "Metal"]
+size = 24
+gy, gx = np.mgrid[0:size, 0:size] - (size - 1) / 2
+ 
+def make_image(label):
+    if label == 0:
+        cx, cy = np.random.randint(-5, 6, 2)
+        img = 0.4 + 0.02 * (gx + gy)
+        img += 0.35 * np.exp(-((gx - cx) ** 2 + (gy - cy) ** 2) / 12)
+    elif label == 1:
+        img = 0.5 + np.random.normal(0, 0.15, (size, size))
+    else:
+        img = 0.5 + 0.2 * np.sin(1.2 * gy + np.random.uniform(0, 6.28))
+    return img + np.random.normal(0, 0.6, img.shape)
+ 
+n_per = 200
+X = np.array([make_image(c) for c in range(3) for _ in range(n_per)])
+y = np.repeat(np.arange(3), n_per)
+X = X.reshape(-1, size, size, 1)
+ 
+idx = np.random.permutation(len(X))
+tr, va = idx[:480], idx[480:]
+ 
+def train(lr, batch, filters):
+    tf.keras.utils.set_random_seed(42)
+    model = keras.Sequential([
+        keras.Input(shape=(size, size, 1)),
+        layers.Conv2D(filters, 3, activation="relu"),
+        layers.MaxPooling2D(),
+        layers.Conv2D(filters * 2, 3, activation="relu"),
+        layers.MaxPooling2D(),
+        layers.Flatten(),
+        layers.Dense(32, activation="relu"),
+        layers.Dense(3, activation="softmax")
+    ])
+    model.compile(optimizer=keras.optimizers.Adam(lr),
+                  loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+    start = time.time()
+    h = model.fit(X[tr], y[tr], epochs=12, batch_size=batch,
+                  validation_data=(X[va], y[va]), verbose=0)
+    secs = time.time() - start
+    return (np.array(h.history["val_accuracy"]),
+            np.array(h.history["val_loss"]), secs)
+ 
+# Baseline: lr=0.001, batch=32, filters=16. Change ONE value at a time.
+configs = {
+    "Baseline":       (0.001, 32, 16),
+    "lr=0.0001":      (0.0001, 32, 16),
+    "lr=0.01":        (0.01, 32, 16),
+    "batch=16":       (0.001, 16, 16),
+    "batch=64":       (0.001, 64, 16),
+    "filters=8":      (0.001, 32, 8),
+    "filters=32":     (0.001, 32, 32),
+}
+runs = {name: train(*cfg) for name, cfg in configs.items()}
+ 
+names_c = list(runs.keys())
+val_acc = np.array([runs[k][0][-1] for k in names_c])
+val_loss = np.array([runs[k][1][-1] for k in names_c])
+secs = np.array([runs[k][2] for k in names_c])
+stab = np.array([np.std(runs[k][0][-4:]) for k in names_c])
+ 
+print("Config       Val Acc  Val Loss  Time(s)  Stability(std last 4)")
+for i, k in enumerate(names_c):
+    print(f"{k:12s} {val_acc[i]:.4f}   {val_loss[i]:.4f}   {secs[i]:6.2f}   "
+          f"{stab[i]:.4f}")
+ 
+# Best balance: fastest configuration within 1% of the best validation accuracy
+good = np.where(val_acc >= val_acc.max() - 0.01)[0]
+best = good[np.argmin(secs[good])]
+print("Best balance of accuracy and training time:", names_c[best])
+ 
+fig, ax = plt.subplots(2, 2, figsize=(13, 9))
+for k, (va_, vl_, _) in runs.items():
+    ax[0, 0].plot(va_, label=k)
+ax[0, 0].set_title("Validation Accuracy vs Epoch")
+ax[0, 0].set_xlabel("Epoch")
+ax[0, 0].legend(fontsize=8)
+ax[0, 1].bar(names_c, val_acc, color="tab:green")
+ax[0, 1].set_title("Final Validation Accuracy")
+ax[1, 0].bar(names_c, val_loss, color="tab:red")
+ax[1, 0].set_title("Final Validation Loss")
+ax[1, 1].bar(names_c, secs, color="tab:purple")
+ax[1, 1].set_title("Training Time (s)")
+for a in (ax[0, 1], ax[1, 0], ax[1, 1]):
+    a.tick_params(axis="x", rotation=45)
+for a in ax.ravel():
+    a.grid()
+plt.tight_layout()
+plt.show()
