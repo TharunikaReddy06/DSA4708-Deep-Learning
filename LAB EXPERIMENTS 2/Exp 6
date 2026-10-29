@@ -1,0 +1,71 @@
+# Question 6
+import numpy as np
+import matplotlib.pyplot as plt
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+ 
+np.random.seed(42)
+# Product data (scaled 0-1): pressure, temperature, production speed
+n = 600
+pressure = np.random.uniform(0, 1, n)
+temperature = np.random.uniform(0, 1, n)
+speed = np.random.uniform(0, 1, n)
+X = np.column_stack([pressure, temperature, speed])
+# Product passes only when pressure and temperature are near the ideal
+# values and the speed is not too high (non-linear rule)
+ok = ((pressure - 0.5) ** 2 + (temperature - 0.5) ** 2 < 0.12) & (speed < 0.85)
+y = ok.astype(int)
+ 
+idx = np.random.permutation(n)
+tr, va = idx[:420], idx[420:]
+X_tr, y_tr, X_va, y_va = X[tr], y[tr], X[va], y[va]
+ 
+def train(model):
+    tf.keras.utils.set_random_seed(42)
+    model.compile(optimizer=keras.optimizers.Adam(0.01),
+                  loss="binary_crossentropy", metrics=["accuracy"])
+    h = model.fit(X_tr, y_tr, epochs=80, batch_size=16,
+                  validation_data=(X_va, y_va), verbose=0)
+    return {k: np.array(v) for k, v in h.history.items()}
+ 
+tf.keras.utils.set_random_seed(42)
+single = keras.Sequential([
+    keras.Input(shape=(3,)),
+    layers.Dense(8, activation="relu"),
+    layers.Dense(1, activation="sigmoid")
+])
+multi = keras.Sequential([
+    keras.Input(shape=(3,)),
+    layers.Dense(16, activation="relu"),
+    layers.Dense(16, activation="relu"),
+    layers.Dense(8, activation="relu"),
+    layers.Dense(1, activation="sigmoid")
+])
+models = {"Single hidden layer": single, "Multiple hidden layers": multi}
+results = {name: train(m) for name, m in models.items()}
+ 
+print("Architecture            Params  Train Acc  Val Acc  "
+      "Train Loss  Val Loss  Gap")
+for name, r in results.items():
+    gap = r["accuracy"][-1] - r["val_accuracy"][-1]
+    print(f"{name:22s}  {models[name].count_params():5d}  "
+          f"{r['accuracy'][-1]:.4f}     {r['val_accuracy'][-1]:.4f}   "
+          f"{r['loss'][-1]:.4f}      {r['val_loss'][-1]:.4f}    {gap:.4f}")
+ 
+best = max(results, key=lambda k: results[k]["val_accuracy"][-1])
+print("Recommended architecture (highest validation accuracy):", best)
+ 
+fig, ax = plt.subplots(1, 2, figsize=(12, 4.5))
+for name, r in results.items():
+    ax[0].plot(r["accuracy"], label=f"{name} (train)")
+    ax[0].plot(r["val_accuracy"], "--", label=f"{name} (val)")
+    ax[1].plot(r["loss"], label=f"{name} (train)")
+    ax[1].plot(r["val_loss"], "--", label=f"{name} (val)")
+ax[0].set_title("Accuracy")
+ax[1].set_title("Loss")
+for a in ax:
+    a.set_xlabel("Epoch")
+    a.legend(fontsize=8)
+    a.grid()
+plt.show()
