@@ -1,0 +1,26 @@
+# Question 1
+import numpy as np
+from tensorflow import keras
+from tensorflow.keras import layers
+
+# Study hours of four consecutive days
+hours = np.array([2, 3, 4, 5], dtype="float32")
+
+# RNN input shape: (samples, time steps, features)
+X = hours.reshape(1, 4, 1)
+y = np.array([6.0])            # study hours of the next day
+
+# SimpleRNN layer + Dense output layer
+model = keras.Sequential([
+    keras.Input(shape=(4, 1)),
+    layers.SimpleRNN(8, activation="tanh"),
+    layers.Dense(1)
+])
+model.summary()
+
+model.compile(optimizer=keras.optimizers.Adam(0.01), loss="mse")
+model.fit(X, y, epochs=300, verbose=0)
+
+pred = model.predict(X, verbose=0)
+print("Input sequence   :", hours)
+print("Predicted output :", round(float(pred[0, 0]), 2))
