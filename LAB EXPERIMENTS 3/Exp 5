@@ -1,0 +1,37 @@
+# Question 5
+import numpy as np
+from tensorflow import keras
+from tensorflow.keras import layers
+
+months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+          "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+sales = np.array([100, 110, 120, 130, 140, 150,
+                  160, 170, 180, 190, 200, 210], dtype="float32")
+
+# Sliding window: previous 3 months -> next month
+window = 3
+X, y = [], []
+for i in range(len(sales) - window):
+    X.append(sales[i:i + window])
+    y.append(sales[i + window])
+X = np.array(X) / 100.0
+y = np.array(y) / 100.0
+X = X.reshape(-1, window, 1)
+print("Training samples =", len(X))
+
+model = keras.Sequential([
+    keras.Input(shape=(window, 1)),
+    layers.SimpleRNN(50, activation="relu"),
+    layers.Dense(1)
+])
+model.summary()
+
+model.compile(optimizer=keras.optimizers.Adam(0.01), loss="mse")
+history = model.fit(X, y, epochs=300, verbose=0)
+print("Final training loss =", history.history["loss"][-1])
+
+# Forecast next month (January) from Oct, Nov, Dec
+last = (sales[-3:] / 100.0).reshape(1, window, 1)
+forecast = model.predict(last, verbose=0) * 100
+print("Last three months  :", sales[-3:])
+print("Forecast for next month =", round(float(forecast[0, 0]), 2))
