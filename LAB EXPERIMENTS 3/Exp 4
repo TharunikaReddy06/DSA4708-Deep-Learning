@@ -1,0 +1,49 @@
+# Question 4
+import numpy as np
+from tensorflow import keras
+from tensorflow.keras import layers
+
+text = "machine learning is interesting"
+seq_len = 4
+
+# Character <-> index dictionaries
+chars = sorted(set(text))
+char_to_idx = {c: i for i, c in enumerate(chars)}
+idx_to_char = {i: c for c, i in char_to_idx.items()}
+vocab = len(chars)
+
+# Input-output sequences: 4 characters -> next character
+X_idx, y_idx = [], []
+for i in range(len(text) - seq_len):
+    X_idx.append([char_to_idx[c] for c in text[i:i + seq_len]])
+    y_idx.append(char_to_idx[text[i + seq_len]])
+
+X = np.eye(vocab)[np.array(X_idx)]     # one-hot: (samples, 4, vocab)
+y = np.array(y_idx)
+print("Number of sequences =", len(X))
+
+model = keras.Sequential([
+    keras.Input(shape=(seq_len, vocab)),
+    layers.SimpleRNN(64),
+    layers.Dense(vocab, activation="softmax")
+])
+model.summary()
+
+model.compile(optimizer=keras.optimizers.Adam(0.01),
+              loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+model.fit(X, y, epochs=300, verbose=0)
+loss, acc = model.evaluate(X, y, verbose=0)
+print("Training accuracy =", acc)
+
+# Generate characters from a starting sequence
+def generate(seed, n_chars):
+    result = seed
+    for _ in range(n_chars):
+        window = result[-seq_len:]
+        x = np.eye(vocab)[[char_to_idx[c] for c in window]][np.newaxis]
+        p = model.predict(x, verbose=0)[0]
+        result += idx_to_char[int(np.argmax(p))]
+    return result
+
+print("Starting sequence : mach")
+print("Generated text    :", generate("mach", 15))
